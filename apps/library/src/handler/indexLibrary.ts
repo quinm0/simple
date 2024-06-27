@@ -16,7 +16,6 @@ export const indexLibraryHandler: Handler<IndexLibraryJob, IndexLibraryJobResult
   console.log(`Found ${files.length} files in the directory`);
   
   return {
-    type: 'index-library-result',
     indexedFiles: files.length,
   };
 };

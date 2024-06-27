@@ -1,18 +1,24 @@
 import { env } from './env';
-import { LIBRARY_QUEUE_NAME, type IndexLibraryJob, type LibraryJobData, type LibraryJobResult } from 'types';
-import { JobManager, JobRuntimeManager } from 'jobruntime';
+import { LIBRARY_QUEUE_NAME, type IndexLibraryJob, type IndexLibraryJobResult, type LibraryJobData, type LibraryJobResult } from 'types';
+import { JobHandler } from 'jobruntime';
+import { indexLibraryHandler } from './handler/indexLibrary';
 
-export const jm = new JobManager({
-  host: env.REDIS_HOST,
-  port: env.REDIS_PORT,
-  queueName: LIBRARY_QUEUE_NAME,
-})
-
-const job = await jm.fireAndAwaitJobCompletion<IndexLibraryJob>({
-  type: 'index',
-  directoryPath: './',
+export const jm = new JobHandler<IndexLibraryJob, IndexLibraryJobResult>({
+  queueName: `${LIBRARY_QUEUE_NAME}-index`,
+  redis: {
+    host: env.REDIS_HOST,
+    port: env.REDIS_PORT,
+  },
 });
-  
-console.log(job);
-// await jm.shutdown();
-// process.exit(0);
+
+for (let i = 0; i < 5; i++) {
+  const result = await jm.fireAndWaitForJobResult({
+    directoryPath: './',
+  });
+
+  console.log(result);
+}
+
+process.exit(0);
+
+

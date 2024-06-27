@@ -5,11 +5,11 @@ import { indexLibraryHandler } from './handler/indexLibrary';
 
 export const jm = new JobHandler<IndexLibraryJob, IndexLibraryJobResult>({
   queueName: `${LIBRARY_QUEUE_NAME}-index`,
-  handler: indexLibraryHandler,
   redis: {
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
   },
+  handler: indexLibraryHandler,
 });
 
 
