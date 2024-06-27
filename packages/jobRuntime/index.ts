@@ -23,7 +23,7 @@ export class JobHandler<RequestT, ResponseT = void> {
     const queueOptions = { 
       connection: connectionDetails instanceof Redis ? connectionDetails : new Redis({
         ...connectionDetails as RedisOptions,
-        maxRetriesPerRequest: null,
+        maxRetriesPerRequest: (connectionDetails as RedisOptions).maxRetriesPerRequest ?? null,
       }) 
     };
 
