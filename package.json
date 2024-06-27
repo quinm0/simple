@@ -4,12 +4,13 @@
   "license": "MIT",
   "scripts": {},
   "private": true,
-  "dependencies": {},
+  "dependencies": { "zod": "^3.23.8" },
   "devDependencies": {
     "@nx/js": "19.3.2",
     "nx": "19.3.2"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ]
 }

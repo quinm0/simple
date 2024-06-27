@@ -1,0 +1,16 @@
+{
+  "name": "library",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@t3-oss/env-core": "^0.10.1",
+    "bullmq": "^5.8.2",
+    "ioredis": "^5.4.1"
+  }
+}
