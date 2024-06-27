@@ -2,9 +2,9 @@ import { Job } from 'bullmq';
 import { type IndexLibraryJob, type IndexLibraryJobResult } from 'types';
 import { readdir } from 'fs/promises';
 import { jm } from '..';
-import type { Handler } from 'jobruntime';
+import type { HandlerFunction } from 'jobruntime';
 
-export const indexLibraryHandler: Handler<IndexLibraryJob, IndexLibraryJobResult> = async (job: Job<IndexLibraryJob>) => {
+export const indexLibraryHandler: HandlerFunction<IndexLibraryJob, IndexLibraryJobResult> = async (job: Job<IndexLibraryJob>) => {
   console.log(`Indexing library at path: ${job.data.directoryPath}`);
   
   // Introduce a random failure 1/5 times

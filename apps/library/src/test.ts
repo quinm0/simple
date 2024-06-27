@@ -1,8 +1,8 @@
 import { env } from './env';
 import { LIBRARY_QUEUE_NAME, type IndexLibraryJob, type IndexLibraryJobResult, type LibraryJobData, type LibraryJobResult } from 'types';
-import { JobHandler } from 'jobruntime';
+import { Handler } from 'jobruntime';
 
-export const jm = new JobHandler<IndexLibraryJob, IndexLibraryJobResult>({
+export const jm = new Handler<IndexLibraryJob, IndexLibraryJobResult>({
   queueName: `${LIBRARY_QUEUE_NAME}-index`,
   redis: {
     host: env.REDIS_HOST,
