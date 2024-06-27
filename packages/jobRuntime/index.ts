@@ -9,9 +9,10 @@ export class JobRuntime<T extends { type: string }, R extends { type?: string } 
   private handlers: Record<string, Handler<any, any>> = {};
   private resultQueue?: Queue<R>;
 
-  constructor(resultQueueName?: string, connection?: Redis) {
-    if (resultQueueName && connection) {
-      this.resultQueue = new Queue<R>(resultQueueName, { connection });
+  constructor(queueName: string, connection?: Redis, resultQueueName?: string) {
+    const finalResultQueueName = resultQueueName || `${queueName}_result`;
+    if (finalResultQueueName && connection) {
+      this.resultQueue = new Queue<R>(finalResultQueueName, { connection });
     }
   }
 
@@ -44,7 +45,7 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
       maxRetriesPerRequest: null,
     });
 
-    this.jobRuntime = new JobRuntime<T, R>(resultQueueName, this.connection);
+    this.jobRuntime = new JobRuntime<T, R>(queueName, this.connection, resultQueueName);
     this.queue = new Queue<T>(queueName, { connection: this.connection });
 
     this.worker = new Worker<T>(queueName, async (job: Job<T>) => {
