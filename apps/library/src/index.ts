@@ -1,7 +1,7 @@
 import { Queue, Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
 import { env } from './env';
-import { LIBRARY_QUEUE_NAME, type IndexLibraryJob, type LibraryJobData, type RandomLibraryJob } from 'types';
+import { LIBRARY_QUEUE_NAME, type LibraryJobData } from 'types';
 import { JobRuntime } from 'jobruntime';
 
 // Redis connection configuration
