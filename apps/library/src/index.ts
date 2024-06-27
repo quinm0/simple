@@ -12,12 +12,7 @@ const connection = new Redis({
 });
 
 
-const jobRuntime = new JobRuntime<LibraryJobData>();
-
-// Register handlers for different job types
-jobRuntime.registerHandler('index', async (job: Job<IndexLibraryJob>) => {
-  console.log(`Processing job ${job.id} with data:`, job.data);
-});
+export const jobRuntime = new JobRuntime<LibraryJobData>();
 
 // Create a BullMQ queue with the job data type
 const queue = new Queue<LibraryJobData>(LIBRARY_QUEUE_NAME, { connection });
