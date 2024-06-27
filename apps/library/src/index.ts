@@ -2,6 +2,7 @@ import { Queue, Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
 import { env } from './env';
 import { LIBRARY_QUEUE_NAME, type IndexLibraryJob, type LibraryJobData, type RandomLibraryJob } from 'types';
+import { JobRuntime } from 'jobruntime';
 
 // Redis connection configuration
 const connection = new Redis({
@@ -10,20 +11,8 @@ const connection = new Redis({
   maxRetriesPerRequest: null,
 });
 
-// Runtime to register handlers
-class JobRuntime {
-  private handlers: Record<LibraryJobData['type'], (job: Job<LibraryJobData>) => Promise<void>> = {} as Record<LibraryJobData['type'], (job: Job<LibraryJobData>) => Promise<void>>;
 
-  registerHandler<T extends LibraryJobData>(type: T['type'], handler: (job: Job<T>) => Promise<void>) {
-    this.handlers[type] = handler as (job: Job<LibraryJobData>) => Promise<void>;
-  }
-
-  getHandler(type: LibraryJobData['type']) {
-    return this.handlers[type];
-  }
-}
-
-const jobRuntime = new JobRuntime();
+const jobRuntime = new JobRuntime<LibraryJobData>();
 
 // Register handlers for different job types
 jobRuntime.registerHandler('index', async (job: Job<IndexLibraryJob>) => {
@@ -67,4 +56,3 @@ process.on('SIGINT', async () => {
   console.log('Server is closed');
   process.exit(0);
 });
-
