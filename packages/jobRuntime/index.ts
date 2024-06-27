@@ -6,10 +6,8 @@ export type HandlerFunction<RequestT, ResponseT = void> = (job: Job<RequestT>) =
 type JobHandlerOptions<RequestT, ResponseT> = {
   queueName: string;
   handler?: HandlerFunction<RequestT, ResponseT>;
-} & (
-  | { redis: RedisOptions }
-  | { redis?: Redis }
-);
+  redis: Redis;
+};
 
 export class Handler<RequestT, ResponseT = void> {
   public queue: Queue<RequestT, ResponseT>;
@@ -17,15 +15,10 @@ export class Handler<RequestT, ResponseT = void> {
   private queueEvents: QueueEvents;
 
   constructor(options: JobHandlerOptions<RequestT, ResponseT>) {
-    const { queueName, handler, redis: connectionDetails } = options;
+    const { queueName, handler, redis } = options;
     console.log(`Listening to BullMQ queue: ${queueName}`);
 
-    const queueOptions = { 
-      connection: connectionDetails instanceof Redis ? connectionDetails : new Redis({
-        ...connectionDetails as RedisOptions,
-        maxRetriesPerRequest: (connectionDetails as RedisOptions).maxRetriesPerRequest ?? null,
-      }) 
-    };
+    const queueOptions = { connection: redis };
 
     this.queue = new Queue<RequestT>(queueName, queueOptions);
     this.queueEvents = new QueueEvents(queueName, queueOptions);
@@ -71,41 +64,54 @@ export class Handler<RequestT, ResponseT = void> {
 
 type JobHandler<RequestT, ResponseT> = {
   queueName: string;
-  redis: RedisOptions;
   handler: (job: Job<RequestT>) => Promise<ResponseT>;
 };
 
-export class JobManager {
-  private handlers: { [key: string]: Handler<any, any> } = {};
+export class JobManager<JobTypes extends { [key: string]: { request: any; response: any } }> {
+  private handlers: { [K in keyof JobTypes]?: Handler<JobTypes[K]['request'], JobTypes[K]['response']> } = {};
   private baseQueueName: string;
+  private redis: Redis;
 
-  constructor(baseQueueName: string) {
+  constructor(baseQueueName: string, redisOptions: RedisOptions) {
     this.baseQueueName = baseQueueName;
-  }
-
-  public registerHandler<RequestT, ResponseT>(jobType: string, handler: JobHandler<RequestT, ResponseT>): void {
-    const queueName = `${this.baseQueueName}-${jobType}`;
-    this.handlers[jobType] = new Handler<RequestT, ResponseT>({
-      queueName,
-      redis: handler.redis,
-      handler: handler.handler,
+    this.redis = new Redis({
+      ...redisOptions,
+      maxRetriesPerRequest: redisOptions.maxRetriesPerRequest ?? null,
     });
   }
 
-  public async fireJob<RequestT>(jobType: string, data: RequestT): Promise<void> {
-    const handler = this.handlers[jobType];
+  public registerHandler<K extends keyof JobTypes>(jobType: K, handler: JobHandler<JobTypes[K]['request'], JobTypes[K]['response']>['handler']): void {
+    const queueName = `${this.baseQueueName}-${String(jobType)}`;
+    this.handlers[jobType] = new Handler<JobTypes[K]['request'], JobTypes[K]['response']>({
+      queueName,
+      redis: this.redis,
+      handler: handler,
+    });
+  }
+
+  public async fireJob<K extends keyof JobTypes>(jobType: K, data: JobTypes[K]['request']): Promise<void> {
+    const queueName = `${this.baseQueueName}-${String(jobType)}`;
+    let handler = this.handlers[jobType];
     if (!handler) {
-      throw new Error(`No handler registered for job type: ${jobType}`);
+      handler = new Handler<JobTypes[K]['request'], JobTypes[K]['response']>({
+        queueName,
+        redis: this.redis,
+      });
+      this.handlers[jobType] = handler;
     }
     await handler.fireJob(data);
   }
 
-  public async fireAndWaitForJobResult<RequestT, ResponseT>(jobType: string, data: RequestT): Promise<ResponseT> {
-    const handler = this.handlers[jobType];
+  public async fireAndWaitForJobResult<K extends keyof JobTypes>(jobType: K, data: JobTypes[K]['request']): Promise<JobTypes[K]['response']> {
+    const queueName = `${this.baseQueueName}-${String(jobType)}`;
+    let handler = this.handlers[jobType];
     if (!handler) {
-      throw new Error(`No handler registered for job type: ${jobType}`);
+      handler = new Handler<JobTypes[K]['request'], JobTypes[K]['response']>({
+        queueName,
+        redis: this.redis,
+      });
+      this.handlers[jobType] = handler;
     }
     return handler.fireAndWaitForJobResult(data);
   }
 }
-
