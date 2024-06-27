@@ -1,5 +1,5 @@
 import type { Job } from 'bullmq';
-import { Queue, Worker } from 'bullmq';
+import { Queue, Worker, QueueEvents } from 'bullmq';
 import Redis from 'ioredis';
 
 export type Handler<T, R extends { type?: string } = { type: 'nil-result-type' }> = (job: Job<T>) => Promise<R | void>;
@@ -37,6 +37,7 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
   public queue: Queue<T>;
   private worker: Worker<T>;
   private interval: Timer | undefined;
+  private queueEvents: QueueEvents;
 
   constructor(queueName: string, host: string, port: number, resultQueueName?: string) {
     this.connection = new Redis({
@@ -47,6 +48,7 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
 
     this.jobRuntime = new JobRuntime<T, R>(queueName, this.connection, resultQueueName);
     this.queue = new Queue<T>(queueName, { connection: this.connection });
+    this.queueEvents = new QueueEvents(queueName, { connection: this.connection });
 
     this.worker = new Worker<T>(queueName, async (job: Job<T>) => {
       const handler = this.jobRuntime.getHandler(job.data.type as T['type']);
@@ -59,6 +61,34 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
         console.error(`No handler found for job type: ${job.data.type}`);
       }
     }, { connection: this.connection });
+
+    this.setupQueueEvents();
+  }
+
+  private setupQueueEvents() {
+    this.queueEvents.on('completed', ({ jobId }) => {
+      console.log(`Job with ID ${jobId} has been completed`);
+    });
+
+    this.queueEvents.on('failed', ({ jobId, failedReason }) => {
+      console.log(`Job with ID ${jobId} has failed with reason: ${failedReason}`);
+    });
+
+    this.queueEvents.on('progress', ({ jobId, data }) => {
+      console.log(`Job with ID ${jobId} reported progress: ${data}`);
+    });
+
+    this.queueEvents.on('waiting', ({ jobId }) => {
+      console.log(`Job with ID ${jobId} is waiting to be processed`);
+    });
+
+    this.queueEvents.on('active', ({ jobId, prev }) => {
+      console.log(`Job with ID ${jobId} is now active; previous status was ${prev}`);
+    });
+
+    this.queueEvents.on('stalled', ({ jobId }) => {
+      console.log(`Job with ID ${jobId} has stalled and will be reprocessed`);
+    });
   }
 
   public start() {
