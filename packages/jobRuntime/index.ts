@@ -9,7 +9,7 @@ export class JobRuntime<T extends { type: string }, R extends { type?: string } 
   private handlers: Record<string, Handler<any, any>> = {};
   private resultQueue?: Queue<R>;
 
-  constructor(queueName: string, connection?: Redis, resultQueueName?: string) {
+  constructor({ queueName, connection, resultQueueName }: { queueName: string, connection?: Redis, resultQueueName?: string }) {
     const finalResultQueueName = resultQueueName || `${queueName}_result`;
     if (finalResultQueueName && connection) {
       this.resultQueue = new Queue<R>(finalResultQueueName, { connection });
@@ -38,17 +38,21 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
   private worker: Worker<T>;
   private interval: Timer | undefined;
   private queueEvents: QueueEvents;
+  private debug: boolean;
+  private debugInterval: number;
 
-  constructor(queueName: string, host: string, port: number, resultQueueName?: string) {
+  constructor({ queueName, host, port, resultQueueName, debug = false, debugInterval = 10000 }: { queueName: string, host: string, port: number, resultQueueName?: string, debug?: boolean, debugInterval?: number }) {
     this.connection = new Redis({
       host: host,
       port: port,
       maxRetriesPerRequest: null,
     });
 
-    this.jobRuntime = new JobRuntime<T, R>(queueName, this.connection, resultQueueName);
+    this.jobRuntime = new JobRuntime<T, R>({ queueName, connection: this.connection, resultQueueName });
     this.queue = new Queue<T>(queueName, { connection: this.connection });
     this.queueEvents = new QueueEvents(queueName, { connection: this.connection });
+    this.debug = debug;
+    this.debugInterval = debugInterval;
 
     this.worker = new Worker<T>(queueName, async (job: Job<T>) => {
       const handler = this.jobRuntime.getHandler(job.data.type as T['type']);
@@ -58,12 +62,14 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
           await this.jobRuntime.handleResult(result as R);
         }
       } else {
-        console.error(`No handler found for job type: ${job.data.type}`);
+        console.error(`No handler found for job type: ${job.data.type}. Job will remain in the queue.`);
+        await job.moveToDelayed(Date.now() + 60000); // Move job to delayed state for 1 minute
       }
     }, { connection: this.connection });
 
     this.setupQueueEvents();
     this.setupShutdownOnExit();
+    this.setupDebugLogging();
     console.log(`Job runtime for queue ${queueName} is up and ready to start`);
   }
 
@@ -91,6 +97,10 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
     this.queueEvents.on('stalled', ({ jobId }) => {
       console.log(`Job with ID ${jobId} in queue ${this.queue.name} has stalled and will be reprocessed`);
     });
+
+    this.queueEvents.on('error', (error) => {
+      console.error(`Queue event error: ${error}`);
+    });
   }
 
   private setupShutdownOnExit() {
@@ -105,6 +115,15 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
 
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
+  }
+
+  private setupDebugLogging() {
+    if (this.debug) {
+      this.interval = setInterval(async () => {
+        const jobCounts = await this.queue.getJobCounts();
+        console.log(`Queue ${this.queue.name} job counts:`, jobCounts);
+      }, this.debugInterval);
+    }
   }
 
   public async shutdown() {
