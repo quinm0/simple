@@ -1,18 +1,13 @@
 
 type IndexLibraryJob = {
   type: 'index';
+  directoryPath: string;
 }
-
-type RandomLibraryJob = {
-  type: 'random';
-}
-
-type LibraryJobData = IndexLibraryJob | RandomLibraryJob;
+type LibraryJobData = IndexLibraryJob;
 
 
 
 export type {
   LibraryJobData,
   IndexLibraryJob,
-  RandomLibraryJob,
 };
