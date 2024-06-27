@@ -1,9 +1,7 @@
 import { Queue, Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
 import { env } from './env';
-import type { MyJobData } from 'types';
-
-const QUEUE_NAME = 'library-queue';
+import { LIBRARY_QUEUE_NAME, type IndexLibraryJob, type LibraryJobData, type RandomLibraryJob } from 'types';
 
 // Redis connection configuration
 const connection = new Redis({
@@ -12,38 +10,60 @@ const connection = new Redis({
   maxRetriesPerRequest: null,
 });
 
-// Create a BullMQ queue with the job data type
-const myQueue = new Queue<MyJobData>(QUEUE_NAME, { connection });
+// Runtime to register handlers
+class JobRuntime {
+  private handlers: Record<LibraryJobData['type'], (job: Job<LibraryJobData>) => Promise<void>> = {} as Record<LibraryJobData['type'], (job: Job<LibraryJobData>) => Promise<void>>;
 
-// Producer: Adding a job to the queue
-async function addJob() {
-  await myQueue.add('my-job', { foo: 'bar' });
-  console.log('Job added to the queue');
+  registerHandler<T extends LibraryJobData>(type: T['type'], handler: (job: Job<T>) => Promise<void>) {
+    this.handlers[type] = handler as (job: Job<LibraryJobData>) => Promise<void>;
+  }
+
+  getHandler(type: LibraryJobData['type']) {
+    return this.handlers[type];
+  }
 }
 
-// Consumer: Processing jobs from the queue
-const worker = new Worker<MyJobData>(QUEUE_NAME, async (job: Job<MyJobData>) => {
+const jobRuntime = new JobRuntime();
+
+// Register handlers for different job types
+jobRuntime.registerHandler('index', async (job: Job<IndexLibraryJob>) => {
   console.log(`Processing job ${job.id} with data:`, job.data);
+});
+
+jobRuntime.registerHandler('random', async (job: Job<RandomLibraryJob>) => {
+  console.log(`Processing random job ${job.id} with data:`, job.data);
+});
+
+// Create a BullMQ queue with the job data type
+const queue = new Queue<LibraryJobData>(LIBRARY_QUEUE_NAME, { connection });
+
+// Consumer: Processing jobs from the queue
+const worker = new Worker<LibraryJobData>(LIBRARY_QUEUE_NAME, async (job: Job<LibraryJobData>) => {
+  const handler = jobRuntime.getHandler(job.data.type);
+  if (handler) {
+    await handler(job);
+  } else {
+    console.error(`No handler found for job type: ${job.data.type}`);
+  }
 }, { connection });
 
-// Add a job to the queue when the server starts
-addJob();
+let interval: Timer;
 
-// Simple HTTP server to keep the container running
-import http from 'http';
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Media server is running\n');
-});
+// Keep the app running without a HTTP server
+const keepAppRunning = () => {
+  console.log('App is running');
+  interval = setInterval(() => {
+    console.log('App is running');
+  }, 10000);
+};
 
-server.listen(3000, () => {
-  console.log('Server is listening on port 3000');
-});
+keepAppRunning();
 
-// server on close 
-server.on('close', () => {
+process.on('SIGINT', async () => {
   console.log('Server is closing');
-  worker.close();
-  connection.quit();
+  await worker.close();
+  await connection.quit();
+  clearInterval(interval);
   console.log('Server is closed');
+  process.exit(0);
 });
