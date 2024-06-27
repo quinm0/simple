@@ -1,18 +1,18 @@
 import { env } from './env';
-import { LIBRARY_QUEUE_NAME, type LibraryJobData, type LibraryJobResult } from 'types';
-import { JobRuntimeManager } from 'jobruntime';
+import { LIBRARY_QUEUE_NAME, type IndexLibraryJob, type LibraryJobData, type LibraryJobResult } from 'types';
+import { JobManager, JobRuntimeManager } from 'jobruntime';
 
-export const runtime = new JobRuntimeManager<LibraryJobData, LibraryJobResult>({
-  queueName: LIBRARY_QUEUE_NAME,
+export const jm = new JobManager({
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
-});
+  queueName: LIBRARY_QUEUE_NAME,
+})
 
-const result = await runtime.fireAndAwaitJobCompletion({
+const job = await jm.fireAndAwaitJobCompletion<IndexLibraryJob>({
   type: 'index',
   directoryPath: './',
 });
-
-console.log(result);
-await runtime.shutdown();
-process.exit(0);
+  
+console.log(job);
+// await jm.shutdown();
+// process.exit(0);

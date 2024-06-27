@@ -1,10 +1,10 @@
 import { Job } from 'bullmq';
-import { type IndexLibraryJob, type LibraryJobResult } from 'types';
+import { type IndexLibraryJob, type IndexLibraryJobResult } from 'types';
 import { readdir } from 'fs/promises';
-import { runtime } from '..';
+import { jm } from '..';
 import type { Handler } from 'jobruntime';
 
-export const indexLibraryHandler: Handler<IndexLibraryJob, LibraryJobResult> = async (job: Job<IndexLibraryJob>) => {
+export const indexLibraryHandler: Handler<IndexLibraryJob, IndexLibraryJobResult> = async (job: Job<IndexLibraryJob>) => {
   console.log(`Indexing library at path: ${job.data.directoryPath}`);
   
   // Introduce a random failure 1/5 times
@@ -20,10 +20,3 @@ export const indexLibraryHandler: Handler<IndexLibraryJob, LibraryJobResult> = a
     indexedFiles: files.length,
   };
 };
-
-export async function addIndexLibraryJob(directoryPath: string) {
-  await runtime.fireJob({
-    type: 'index',
-    directoryPath,
-  });
-}
