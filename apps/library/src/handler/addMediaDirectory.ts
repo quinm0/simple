@@ -10,7 +10,7 @@ export const addMediaDirectoryHandler: HandlerFunction<AddMediaDirectoryJob, Add
 
   // check if path is already in the database
   const existingDirectory = await db.select().from(mediaDirectories).where(eq(mediaDirectories.path, job.data.path));
-  if (existingDirectory) {
+  if (existingDirectory.length > 0) {
     return {
       success: true,
       directoryId: existingDirectory[0].id,
@@ -26,19 +26,22 @@ export const addMediaDirectoryHandler: HandlerFunction<AddMediaDirectoryJob, Add
     };
   }
 
+  console.log('Inserting directory:', job.data.path);
   // insert the path into the database
-  await db.insert(mediaDirectories).values({
+  const result = await db.insert(mediaDirectories).values({
     path: job.data.path,
     createdAt: Date.now(),
     updatedAt: Date.now(),
     lastScannedAt: -1,
     scanFrequency: -1,
+  }).returning({
+    id: mediaDirectories.id,
   });
 
-  const newDirectory = await db.select().from(mediaDirectories).where(eq(mediaDirectories.path, job.data.path));
+  console.log('Inserted directory:', result);
 
   return {
     success: true,
-    directoryId: newDirectory[0].id,
+    directoryId: result[0].id,
   };
 };

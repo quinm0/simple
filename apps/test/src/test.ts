@@ -1,6 +1,6 @@
 import { env } from '../../library/src/env';
 import { LIBRARY_QUEUE_NAME, LibraryJobNames, type LibraryJobTypes } from 'types';
-import { JobManager } from 'jobruntime';
+import { JobManager } from 'jobmanager';
 import Redis from 'ioredis';
 
 // Flush Redis database to ensure a clean state
