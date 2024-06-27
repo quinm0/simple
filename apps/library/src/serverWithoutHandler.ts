@@ -6,6 +6,5 @@ export const runtime = new JobRuntimeManager<LibraryJobData, LibraryJobResult>({
   queueName: LIBRARY_QUEUE_NAME,
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
-  debug: true,
   debugInterval: 3000
 });

@@ -40,8 +40,9 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
   private queueEvents: QueueEvents;
   private debug: boolean;
   private debugInterval: number;
+  private debugAfterRequest: boolean;
 
-  constructor({ queueName, host, port, resultQueueName, debug = false, debugInterval = 10000 }: { queueName: string, host: string, port: number, resultQueueName?: string, debug?: boolean, debugInterval?: number }) {
+  constructor({ queueName, host, port, resultQueueName, debugInterval = 10000, debugAfterRequest = false }: { queueName: string, host: string, port: number, resultQueueName?: string, debugInterval?: number, debugAfterRequest?: boolean }) {
     this.connection = new Redis({
       host: host,
       port: port,
@@ -51,8 +52,9 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
     this.jobRuntime = new JobRuntime<T, R>({ queueName, connection: this.connection, resultQueueName });
     this.queue = new Queue<T>(queueName, { connection: this.connection });
     this.queueEvents = new QueueEvents(queueName, { connection: this.connection });
-    this.debug = debug;
     this.debugInterval = debugInterval;
+    this.debug = !!debugInterval;
+    this.debugAfterRequest = debugAfterRequest;
 
     this.worker = new Worker<T>(queueName, async (job: Job<T>) => {
       const handler = this.jobRuntime.getHandler(job.data.type as T['type']);
@@ -64,6 +66,11 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
       } else {
         console.error(`No handler found for job type: ${job.data.type}. Job will remain in the queue.`);
         await job.moveToDelayed(Date.now() + 60000); // Move job to delayed state for 1 minute
+      }
+
+      if (this.debugAfterRequest) {
+        const jobCounts = await this.queue.getJobCounts();
+        console.log(`Queue ${this.queue.name} job counts after handling request:`, jobCounts);
       }
     }, { connection: this.connection });
 
