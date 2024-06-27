@@ -17,11 +17,11 @@ import { libraryJM } from './shared';
 // });
 // console.log('Created directory:', result);
 
-// list media directories
-const result = await libraryJM.fireAndWaitForJobResult('listMediaDirectories', {
-  directoryId: 1,
-});
-console.log('List media directories:', result);
+// // list media directories
+// const result = await libraryJM.fireAndWaitForJobResult('listMediaDirectories', {
+//   directoryId: 1,
+// });
+// console.log('List media directories:', result);
 
 
 // quit
