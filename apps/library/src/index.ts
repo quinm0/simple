@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import { env } from './env';
 import { LIBRARY_QUEUE_NAME, type LibraryJobData } from 'types';
 import { JobRuntime } from 'jobruntime';
+import { registerIndexLibraryHandler } from './indexLibrary';
 
 // Redis connection configuration
 const connection = new Redis({
@@ -31,6 +32,7 @@ let interval: Timer;
 
 // Keep the app running without a HTTP server
 const keepAppRunning = () => {
+  registerIndexLibraryHandler();
   console.log('App is running');
   interval = setInterval(() => {
     console.log('App is running');
