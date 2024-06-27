@@ -120,4 +120,22 @@ export class JobManager<JobTypes extends { [key: string]: { request: any; respon
     }
     return this.queueEvents[jobType]!;
   }
+
+  public async shutdown(): Promise<void> {
+    console.log('Shutting down JobManager...');
+    for (const key in this.workers) {
+      if (this.workers[key]) {
+        await this.workers[key]!.close();
+        console.log(`Worker for job type ${key} has been closed`);
+      }
+    }
+    for (const key in this.queueEvents) {
+      if (this.queueEvents[key]) {
+        await this.queueEvents[key]!.close();
+        console.log(`QueueEvents for job type ${key} has been closed`);
+      }
+    }
+    await this.redis.quit();
+    console.log('Redis connection has been closed');
+  }
 }

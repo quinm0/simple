@@ -2,7 +2,9 @@
   "name": "simple",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "dev": "nx run-many --target=dev --all --output-style static"
+  },
   "private": true,
   "dependencies": { "zod": "^3.23.8" },
   "devDependencies": {
