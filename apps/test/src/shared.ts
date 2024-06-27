@@ -1,6 +1,6 @@
 import { env } from '../../library/src/env';
 import { LIBRARY_QUEUE_NAME, LibraryJobNames, type LibraryJobTypes } from 'types';
-import { JobManager } from 'jobruntime';
+import { JobManager } from 'jobmanager';
 
 export const libraryJM = new JobManager<LibraryJobTypes>({
   baseQueueName: LIBRARY_QUEUE_NAME,
