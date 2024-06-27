@@ -15,7 +15,7 @@ const connection = new Redis({
 export const jobRuntime = new JobRuntime<LibraryJobData>();
 
 // Create a BullMQ queue with the job data type
-const queue = new Queue<LibraryJobData>(LIBRARY_QUEUE_NAME, { connection });
+export const queue = new Queue<LibraryJobData>(LIBRARY_QUEUE_NAME, { connection });
 
 // Consumer: Processing jobs from the queue
 const worker = new Worker<LibraryJobData>(LIBRARY_QUEUE_NAME, async (job: Job<LibraryJobData>) => {
