@@ -3,12 +3,6 @@ import { Queue, Worker, Job, QueueEvents } from 'bullmq';
 
 export type HandlerFunction<RequestT, ResponseT = void> = (job: Job<RequestT>) => Promise<ResponseT>;
 
-type JobHandlerOptions<RequestT, ResponseT> = {
-  queueName: string;
-  handler: HandlerFunction<RequestT, ResponseT>;
-  redis: Redis;
-};
-
 type JobHandler<RequestT, ResponseT> = {
   queueName: string;
   handler: (job: Job<RequestT>) => Promise<ResponseT>;
