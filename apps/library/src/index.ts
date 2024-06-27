@@ -2,6 +2,7 @@ import { env } from './env';
 import { LIBRARY_QUEUE_NAME, type LibraryJobTypes } from 'types';
 import { JobManager } from 'jobmanager';
 import { indexLibraryHandler } from './handler/indexLibrary';
+import { addMediaDirectoryHandler } from './handler/addMediaDirectory';
 
 
 export const jm = new JobManager<LibraryJobTypes>({
@@ -13,6 +14,7 @@ export const jm = new JobManager<LibraryJobTypes>({
 });
 
 jm.registerHandler('indexLibrary', indexLibraryHandler);
+jm.registerHandler('addMediaDirectory', addMediaDirectoryHandler);
 
 console.log('Library job manager initialized');
 

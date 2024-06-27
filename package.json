@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "nx run-many --target=dev --all --output-style static"
+    "dev": "nx run-many --target=dev --all --output-style=stream",
+    "dev:nuked": "nx run-many --target=dev:nuked --all --output-style=stream"
   },
   "private": true,
   "dependencies": { "zod": "^3.23.8" },
