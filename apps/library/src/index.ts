@@ -19,10 +19,6 @@ jobRuntime.registerHandler('index', async (job: Job<IndexLibraryJob>) => {
   console.log(`Processing job ${job.id} with data:`, job.data);
 });
 
-jobRuntime.registerHandler('random', async (job: Job<RandomLibraryJob>) => {
-  console.log(`Processing random job ${job.id} with data:`, job.data);
-});
-
 // Create a BullMQ queue with the job data type
 const queue = new Queue<LibraryJobData>(LIBRARY_QUEUE_NAME, { connection });
 
