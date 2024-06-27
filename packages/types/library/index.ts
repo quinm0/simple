@@ -10,6 +10,11 @@ type IndexLibraryJob = {
 
 type IndexLibraryJobResult = {
   indexedFiles: number;
+  files: {
+    path: string;
+    size: number;
+    isDirectory: boolean;
+  }[];
 }
 
 type LibraryJobTypes = {

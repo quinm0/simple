@@ -1,7 +1,6 @@
 import { Job } from 'bullmq';
 import { type IndexLibraryJob, type IndexLibraryJobResult } from 'types';
-import { readdir } from 'fs/promises';
-import { jm } from '..';
+import { readdir, stat } from 'fs/promises';
 import type { HandlerFunction } from 'jobruntime';
 
 export const indexLibraryHandler: HandlerFunction<IndexLibraryJob, IndexLibraryJobResult> = async (job: Job<IndexLibraryJob>) => {
@@ -17,5 +16,10 @@ export const indexLibraryHandler: HandlerFunction<IndexLibraryJob, IndexLibraryJ
   
   return {
     indexedFiles: files.length,
+    files: await Promise.all(files.map(async file => ({
+      path: file,
+      size: (await stat(file)).size,
+      isDirectory: (await stat(file)).isDirectory(),
+    }))),
   };
 };
