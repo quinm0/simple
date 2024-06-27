@@ -1,7 +1,7 @@
 import { Job } from 'bullmq';
 import { type IndexLibraryJob, type IndexLibraryJobResult } from 'types';
 import { readdir, stat } from 'fs/promises';
-import type { HandlerFunction } from 'jobruntime';
+import type { HandlerFunction } from 'jobmanager';
 
 export const indexLibraryHandler: HandlerFunction<IndexLibraryJob, IndexLibraryJobResult> = async (job: Job<IndexLibraryJob>) => {
   console.log(`Indexing library at path: ${job.data.directoryPath}`);

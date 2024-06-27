@@ -1,5 +1,5 @@
 {
-  "name": "jobruntime",
+  "name": "jobmanager",
   "module": "index.ts",
   "type": "module",
   "devDependencies": {
