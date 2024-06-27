@@ -1,5 +1,5 @@
 import type { Job } from 'bullmq';
-import { Queue, Worker, QueueEvents } from 'bullmq';
+import { Queue, Worker, QueueEvents, Job as BullJob } from 'bullmq';
 import Redis from 'ioredis';
 
 export type Handler<T, R extends { type?: string } = { type: 'nil-result-type' }> = (job: Job<T>) => Promise<R | void>;
@@ -63,59 +63,90 @@ export class JobRuntimeManager<T extends { type: string }, R extends { type?: st
     }, { connection: this.connection });
 
     this.setupQueueEvents();
+    this.setupShutdownOnExit();
+    console.log(`Job runtime for queue ${queueName} is up and ready to start`);
   }
 
   private setupQueueEvents() {
     this.queueEvents.on('completed', ({ jobId }) => {
-      console.log(`Job with ID ${jobId} has been completed`);
+      console.log(`Job with ID ${jobId} in queue ${this.queue.name} has been completed`);
     });
 
     this.queueEvents.on('failed', ({ jobId, failedReason }) => {
-      console.log(`Job with ID ${jobId} has failed with reason: ${failedReason}`);
+      console.log(`Job with ID ${jobId} in queue ${this.queue.name} has failed with reason: ${failedReason}`);
     });
 
     this.queueEvents.on('progress', ({ jobId, data }) => {
-      console.log(`Job with ID ${jobId} reported progress: ${data}`);
+      console.log(`Job with ID ${jobId} in queue ${this.queue.name} reported progress: ${data}`);
     });
 
     this.queueEvents.on('waiting', ({ jobId }) => {
-      console.log(`Job with ID ${jobId} is waiting to be processed`);
+      console.log(`Job with ID ${jobId} in queue ${this.queue.name} is waiting to be processed`);
     });
 
     this.queueEvents.on('active', ({ jobId, prev }) => {
-      console.log(`Job with ID ${jobId} is now active; previous status was ${prev}`);
+      console.log(`Job with ID ${jobId} in queue ${this.queue.name} is now active; previous status was ${prev}`);
     });
 
     this.queueEvents.on('stalled', ({ jobId }) => {
-      console.log(`Job with ID ${jobId} has stalled and will be reprocessed`);
+      console.log(`Job with ID ${jobId} in queue ${this.queue.name} has stalled and will be reprocessed`);
     });
   }
 
-  public start() {
-    console.log('App is running');
-    this.interval = setInterval(() => {
-      console.log('App is running');
-    }, 10000);
+  private setupShutdownOnExit() {
+    const shutdown = async () => {
+      console.log(`Job runtime for queue ${this.queue.name} is closing`);
+      await this.worker.close();
+      await this.connection.quit();
+      clearInterval(this.interval);
+      console.log(`Job runtime for queue ${this.queue.name} is closed`);
+      process.exit(0);
+    };
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
   }
 
   public async shutdown() {
-    console.log('Server is closing');
+    console.log(`Job runtime for queue ${this.queue.name} is closing`);
     await this.worker.close();
     await this.connection.quit();
     clearInterval(this.interval);
-    console.log('Server is closed');
+    console.log(`Job runtime for queue ${this.queue.name} is closed`);
   }
 
   public registerHandler<K extends T['type']>(type: K, handler: Handler<Extract<T, { type: K }>, R>) {
     this.jobRuntime.registerHandler(type, handler);
   }
 
-  public async fireJob(data: T) {
+  public async fireJob(data: T): Promise<BullJob<T>> {
     try {
       const job = await this.queue.add(data.type, data);
-      console.log(`Job fired with ID: ${job.id}`);
+      console.log(`Job fired with ID: ${job.id} in queue ${this.queue.name}`);
+      return job;
     } catch (error) {
       console.error('Error firing job:', error);
+      throw error;
+    }
+  }
+
+  public async awaitJobCompletion(job: BullJob<T>): Promise<void> {
+    try {
+      const completedJob = await job.waitUntilFinished(this.queueEvents);
+      console.log(`Job with ID: ${job.id} in queue ${this.queue.name} has completed with result: ${completedJob}`);
+    } catch (error) {
+      console.error(`Error waiting for job completion: ${error}`);
+      throw error;
+    }
+  }
+
+  public async fireAndAwaitJobCompletion(data: T): Promise<void> {
+    try {
+      const job = await this.fireJob(data);
+      await this.awaitJobCompletion(job);
+    } catch (error) {
+      console.error('Error firing and awaiting job completion:', error);
+      throw error;
     }
   }
 }

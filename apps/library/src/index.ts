@@ -11,4 +11,3 @@ export const runtime = new JobRuntimeManager<LibraryJobData, LibraryJobResult>(
 
 runtime.registerHandler('index', indexLibraryHandler);
 
-runtime.start();

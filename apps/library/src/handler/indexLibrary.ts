@@ -15,6 +15,10 @@ export const indexLibraryHandler: Handler<IndexLibraryJob, LibraryJobResult> = a
   const files = await readdir(job.data.directoryPath);
   console.log(`Found ${files.length} files in the directory`);
   
+  return {
+    type: 'index-library-result',
+    indexedFiles: files.length,
+  };
 };
 
 export async function addIndexLibraryJob(directoryPath: string) {

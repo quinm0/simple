@@ -16,8 +16,13 @@ type FileDetailsJobResult = {
   fileType: string;
 }
 
+type IndexLibraryJobResult = {
+  type: 'index-library-result';
+  indexedFiles: number;
+}
+
 type LibraryJobData = IndexLibraryJob | GetFileDetailsJob;
-type LibraryJobResult = FileDetailsJobResult;
+type LibraryJobResult = FileDetailsJobResult | IndexLibraryJobResult;
 
 export type {
   LibraryJobData,
