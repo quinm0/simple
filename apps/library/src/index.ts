@@ -3,8 +3,6 @@ import { LIBRARY_QUEUE_NAME, type LibraryJobTypes } from 'types';
 import { JobManager } from 'jobruntime';
 import { indexLibraryHandler } from './handler/indexLibrary';
 
-
-
 export const jm = new JobManager<LibraryJobTypes>({
   baseQueueName: LIBRARY_QUEUE_NAME,
   redisOptions: {
@@ -12,5 +10,5 @@ export const jm = new JobManager<LibraryJobTypes>({
     port: env.REDIS_PORT,
   },
 });
-jm.registerHandler('indexLibrary', indexLibraryHandler);
 
+jm.registerHandler('indexLibrary', indexLibraryHandler);
